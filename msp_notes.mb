@@ -1,0 +1,21 @@
+MSP_VTXTABLE_BAND        137    //out message         vtxTable band/channel data
+#define MSP_SET_RAW_RC           200    //in message          8 rc chan
+
+#define MSP_SET_RC_TUNING        204    //in message          rc rate, rc expo, rollpitch rate, yaw rate, dyn throttle PID, yaw expo
+
+#define MSP_SET_MOTOR_CONFIG     222    //out message         Motor configuration (min/max throttle, etc)
+
+#define MSP_SET_VTXTABLE_BAND    227    //in message          set vtxTable band/channel data (one band at a time)
+
+#define MSP_SONAR_ALTITUDE              58 //out message get sonar altitude [cm]
+
+
+#define MSP_OSD_CHAR_READ               86 //out message         Get osd settings - betaflight
+#define MSP_OSD_CHAR_WRITE              87 //in message          Set osd settings - betaflight
+
+#define MSP_VTX_CONFIG                  88 //out message         Get vtx settings - betaflight
+#define MSP_SET_VTX_CONFIG              89 //in message          Set vtx settings - betaflight
+
+
+#define MSP_ATTITUDE             108    //out message         2 angles 1 heading
+#define MSP_ALTITUDE             109    //out message         altitude, variometer

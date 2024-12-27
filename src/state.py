@@ -13,7 +13,7 @@ ANY = "00_ANY"
 # events
 
 EV_RC_LOW = "EV_RC_LOW"
-#EV_RC_MED = "EV_RC_MED"
+EV_RC_MED = "EV_RC_MED"
 EV_RC_HIGH = "EV_RC_HIGH"
 
 EV_MKDIR = "EV_MKDIR"

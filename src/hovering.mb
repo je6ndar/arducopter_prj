@@ -1,0 +1,19 @@
+Target altitude -> current altitude(altitude at the moment of the algorithm initialization)
+
+Target heading -> current heading(MSP_ATTITUDE)
+
+Target roll -> position reference controller 
+
+Target pitch -> position reference controller
+
+
+
+position reference? initialize algorithm with (0,0) coordinates and calculate the displacement over IMU measurments
+
+position controller takes position error as an input and outputs roll and pitch angle. The ouput is in the World
+direction(NED)
+
+position controller :
+
+current position error(2D vector) -> translate this vector into local reference frame(requires current heading) -> 
+pid for yaw and pitch estimator -> we get desired pitch and roll 

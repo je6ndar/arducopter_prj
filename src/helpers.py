@@ -2,8 +2,7 @@ import numpy as np
 
 
 #returns pid, previous error based on the given params 
-def get_pid(current_state, desired_state, previous_error, P, I, D, dt):
-    current_error = desired_state - current_state
+def get_pid(current_error, previous_error, P, I, D, dt):
     dErr = current_error - previous_error
     p_term = P * current_error
     i_term = I * dErr * dt                      #simple trapezoid rule
@@ -67,3 +66,9 @@ def dcm(angle):
     dcm[1,0] = np.sin(angle)
     dcm[1,1] = np.cos(angle)
     return dcm
+
+
+
+def low_pass_filter(prev_measurement, current_measurement, alpha):
+    estimated_measurement = alpha*prev_measurement + (1-alpha)*current_measurement
+    return estimated_measurement

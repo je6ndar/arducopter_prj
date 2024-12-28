@@ -6,7 +6,7 @@ import json, os
 
 import config as config
 import state as state
-import helpers as helper
+import helpers as helpers
 import type as types
 
 
@@ -42,9 +42,7 @@ MSG_TYPES = [
     'ATTITUDE',
     'VFR_HUD',
     'EKF_STATUS_REPORT',
-    'GLOBAL_POSITION_INT',
-    'GPS2_RAW',
-    'GPS_RAW_INT',
+    'RAW_IMU',
     'TIMESYNC',
     'HEARTBEAT',
     #'MAVLINK_MSG_ID_RC_CHANNELS_SCALED', 'MAVLINK_MSG_ID_RC_CHANNELS_RAW'
@@ -67,10 +65,11 @@ comm with mavlink
    get_nowait from queue
     if any -> send to conn
 """
-
+attitude = types.CurrentState()
+imu = types.IMU()
 
 def receive_mavlink(CurrentAttitudeQueue, SaveQueue=None):
-    global MAVCONN, LAST_RECV_MSG_TIME, FLIGHT_MODE, PREV_FLIGHT_MODE
+    global MAVCONN, LAST_RECV_MSG_TIME, FLIGHT_MODE, PREV_FLIGHT_MODE, attitude
     
     
     while True:
@@ -103,6 +102,10 @@ def receive_mavlink(CurrentAttitudeQueue, SaveQueue=None):
                 if current_mode != FLIGHT_MODE:
                     FLIGHT_MODE = current_mode
 
+            if in_msg.get_type() == 'RAW_IMU':
+                acc = [in_msg.xacc, in_msg.yacc, in_msg.zacc]
+                imu.update(acc)
+
             if in_msg.get_type() == 'ATTITUDE':
                 current_attitude['roll'] = in_msg.roll                
                 current_attitude['pitch'] = in_msg.pitch
@@ -113,7 +116,7 @@ def receive_mavlink(CurrentAttitudeQueue, SaveQueue=None):
 
             ## State change based on SERVO_OUTPUT_RAW
             if in_msg.get_type() == 'SERVO_OUTPUT_RAW':
-                rc_event = helper.servo_raw_to_rc_level(in_msg)
+                rc_event = helpers.servo_raw_to_rc_level(in_msg)
                 if rc_event == state.EV_RC_HIGH:                                                             #REDO
                     if FLIGHT_MODE != 'GUIDED':
                         PREV_FLIGHT_MODE = FLIGHT_MODE
@@ -128,8 +131,9 @@ def receive_mavlink(CurrentAttitudeQueue, SaveQueue=None):
                     state.next_state(rc_event)
                 
                 if state.STATE==state.HOVER:
-                    attitude = types.CurrentState(current_attitude)
-                    CurrentAttitudeQueue.put(attitude)
+                    attitude.update(current_attitude)                           # updates values of attitude, keeps previous if new is missing
+                    vehicle_data = {'attitude':attitude,'IMU':imu} 
+                    CurrentAttitudeQueue.put(vehicle_data)
             try:
                 if SaveQueue:
                     SaveQueue.put_nowait(MavlinkMessageItem(in_msg))
@@ -281,7 +285,7 @@ def init_mavlink():
 
     request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, ATT_FREQ_Hz)
     request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD, ATT_FREQ_Hz)
-
+    request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_RAW_IMU, ATT_FREQ_Hz)
 
     return mavconn
 

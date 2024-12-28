@@ -1,27 +1,99 @@
 import numpy as np
+from collections import deque
+
 
 class RC_CHANNELS:
-    def _init_(self,channels):
+    def __init__(self,channels):
         self.RC = channels
 
+class IMU:
+    def __init__(self):
+        self.ax = 0
+        self.ay = 0
+        self.az = 0
+        self.ax_LPfiltered = 0
+        self.ay_LPfiltered = 0
+        self.az_LPfiltered = 0
+    def update(self, acc):
+        self.ax = acc[0]
+        self.ay = acc[1]
+        self.az = acc[2]
+    def scale(self, scale_factor):
+        self.ax*=scale_factor
+        self.ay*=scale_factor
+        self.az*=scale_factor
+    def run_LPfilter(self, alpha):
+        self.ax_LPfiltered = alpha*self.ax_LPfiltered + (1-alpha)*self.ax
+        self.ay_LPfiltered = alpha*self.ay_LPfiltered + (1-alpha)*self.ay
+        self.az_LPfiltered = alpha*self.az_LPfiltered + (1-alpha)*self.az
+    def get_acc_filtered(self):
+        return np.array([self.ax_LPfiltered, self.ay_LPfiltered, self.az_LPfiltered])
 class CurrentState:
-    def _init_(self, state):
-        self.roll = state['roll']
-        self.pitch = state['pitch']
-        self.yaw = state['yaw']
-        self.alt = state['alt']
+    def __init__(self, state=None):
+        if state:
+            self.roll = state.get('roll', None)
+            self.pitch = state.get('pitch', None)
+            self.yaw = state.get('yaw', None)
+            self.alt = state.get('alt', None)
+        else:
+            self.roll = None
+            self.pitch = None
+            self.yaw = None
+            self.alt = None
+    
+    def update(self, state):
+        if state['roll'] is not None:
+            self.roll = state['roll']
+        if state['pitch'] is not None:
+            self.pitch = state['pitch']
+        if state['yaw'] is not None:
+            self.yaw = state['yaw']
+        if state['alt'] is not None:
+            self.alt = state['alt']        
+    
+    def get_status(self):
+        return all(value is not None for value in vars(self).values())
+    
+    def clear(self):
+        self._init_()
+    
+    def get_state_vec(self):
+        vec = list(vars(self).values())
+        return np.array(vec)
+
+    def get_missing(self):
+        return vars(self)
     def get_current_state():
         pass
     
 
-class DesiredState:
-    def _init_(self):
-        self.roll = None
-        self.pitch = None
-        self.yaw = None
-        self.alt = None
-    def clear(self):
-        self._init_()
+class DesiredState(CurrentState):
+    def set_initial_condition(self, current_state):
+        self.yaw = current_state.yaw
+        self.alt = current_state.alt
+    def update_desired_roll_pitch(self, roll, pitch):
+        self.roll = roll
+        self.pitch = pitch
 
-    def get_desired_state():
-        pass
+# Circular buffer for 3D accelerometer data
+class CircularBuffer3D:
+    def __init__(self, size):
+        self.buffer_x = deque(maxlen=size)
+        self.buffer_y = deque(maxlen=size)
+        self.buffer_z = deque(maxlen=size)
+
+    def add(self, accel):
+        # accel is a 3D vector (ax, ay, az)
+        self.buffer_x.append(accel[0])
+        self.buffer_y.append(accel[1])
+        self.buffer_z.append(accel[2])
+
+    def is_full(self):
+        return len(self.buffer_x) == self.buffer_x.maxlen
+
+    def get_data(self):
+        return (
+            np.array(self.buffer_x),
+            np.array(self.buffer_y),
+            np.array(self.buffer_z),
+        )

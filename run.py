@@ -19,9 +19,9 @@ def run():
     MavlinkSendThread = Thread(target=mavlink.send_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
     
     # controls threads
-    HoverThread = Thread(target=hover.hover, kwargs=dict(CurrentAttitudeQueue))
+    HoverThread = Thread(target=hover.hover, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue))
     
-    threads = [MavlinkReceiveThread, MavlinkSendQueue, HoverThread]
+    threads = [MavlinkReceiveThread, MavlinkSendThread, HoverThread]
     
     for th in threads:
          th.start()

@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.integrate import trapezoid
 
 #returns pid, previous error based on the given params 
 def get_pid(current_error, previous_error, P, I, D, dt):
@@ -9,7 +9,6 @@ def get_pid(current_error, previous_error, P, I, D, dt):
     d_term = D * dErr / dt
     pid = p_term + i_term + d_term
     return pid, current_error                   #current error becomes previous
-
 
 
 def servo_raw_to_rc_level(servo_raw_msg):
@@ -57,15 +56,6 @@ def euler_to_dcm(euler):
     dcm[2][2] = c_phi * c_theta
     return dcm
 
-
-# Returns 2x2 rotational matrix
-def dcm(angle):
-    dcm = np.zeros([2,2])
-    dcm[0,0] = np.cos(angle)
-    dcm[0,1] = -np.sin(angle)
-    dcm[1,0] = np.sin(angle)
-    dcm[1,1] = np.cos(angle)
-    return dcm
 
 
 

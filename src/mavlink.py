@@ -68,7 +68,7 @@ comm with mavlink
 attitude = types.CurrentState()
 imu = types.IMU()
 
-def receive_mavlink(CurrentAttitudeQueue, SaveQueue=None):
+def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
     global MAVCONN, LAST_RECV_MSG_TIME, FLIGHT_MODE, PREV_FLIGHT_MODE, attitude
     
     
@@ -117,19 +117,8 @@ def receive_mavlink(CurrentAttitudeQueue, SaveQueue=None):
             ## State change based on SERVO_OUTPUT_RAW
             if in_msg.get_type() == 'SERVO_OUTPUT_RAW':
                 rc_event = helpers.servo_raw_to_rc_level(in_msg)
-                if rc_event == state.EV_RC_HIGH:                                                             #REDO
-                    if FLIGHT_MODE != 'GUIDED':
-                        PREV_FLIGHT_MODE = FLIGHT_MODE
-                        set_mode(MAVCONN, 'GUIDED')
-                elif rc_event in [state.EV_RC_LOW, state.EV_RC_MED]:
-                    if FLIGHT_MODE == 'GUIDED' and PREV_FLIGHT_MODE:
-                        set_mode(MAVCONN, PREV_FLIGHT_MODE)
-                        PREV_FLIGHT_MODE = None
-
-
-                if rc_event in [state.EV_RC_LOW, state.EV_RC_MED, state.EV_RC_HIGH]:                         #MED?
+                if rc_event in [state.EV_RC_LOW, state.EV_RC_HIGH]:                         #MED?
                     state.next_state(rc_event)
-                
                 if state.STATE==state.HOVER:
                     attitude.update(current_attitude)                           # updates values of attitude, keeps previous if new is missing
                     vehicle_data = {'attitude':attitude,'IMU':imu} 
@@ -148,7 +137,9 @@ def receive_mavlink(CurrentAttitudeQueue, SaveQueue=None):
 
 
 def send_mavlink(MavlinkSendQueue=None):
-    if MavlinkSendQueue is not None:
+    if not MavlinkSendQueue:
+        return
+    while True:
         try:
             out_msg = MavlinkSendQueue.get_nowait()
             out_msg_mavlink = convert_msg(out_msg)
@@ -196,9 +187,8 @@ def convert_msg(item):
     msg = None
     # https://mavlink.io/en/messages/common.html#SET_POSITION_TARGET_LOCAL_NED
     if type(item) == types.RC_CHANNELS:
-        rc = item.RC
+        rc = item.get_rc_vec()
         msg = create_rc_msg(rc)
-        pass
     # https://mavlink.io/en/messages/common.html#STATUSTEXT
     elif type(item) == types.Status:
         msg = MAVCONN.mav.statustext_encode(
@@ -212,7 +202,7 @@ def convert_msg(item):
 # TODO - time?
 def create_rc_msg(rc):
     if not MAVCONN:
-        return None
+        return
     
     rc1,rc2,rc3,rc4,rc5,rc6,rc7,rc8,rc9,rc10,rc11,rc12,rc13,rc14,rc15,rc16,rc17,rc18 = rc 
     

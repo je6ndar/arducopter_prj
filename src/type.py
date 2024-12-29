@@ -3,8 +3,35 @@ from collections import deque
 
 
 class RC_CHANNELS:
-    def __init__(self,channels):
-        self.RC = channels
+    def __init__(self):
+        self.rc1 = 0
+        self.rc2 = 0
+        self.rc3 = 0
+        self.rc4 = 0
+        self.rc5 = 0
+        self.rc6 = 0
+        self.rc7 = 0
+        self.rc8 = 0
+        self.rc9 = 0
+        self.rc10 = 0
+        self.rc11 = 0
+        self.rc12 = 0
+        self.rc13 = 0
+        self.rc14 = 0
+        self.rc15 = 0
+        self.rc16 = 0
+        self.rc17 = 0
+        self.rc18 = 0
+
+    def update_controll_channels(self, channels):
+        self.rc1 = channels['roll']
+        self.rc3 = channels['pitch']
+        self.rc4 = channels['yaw']
+        self.rc2 = channels['throttle']
+
+    def get_rc_vec(self):
+        vec = list(vars(self).values())
+        return np.array(vec) 
 
 class IMU:
     def __init__(self):
@@ -92,8 +119,4 @@ class CircularBuffer3D:
         return len(self.buffer_x) == self.buffer_x.maxlen
 
     def get_data(self):
-        return (
-            np.array(self.buffer_x),
-            np.array(self.buffer_y),
-            np.array(self.buffer_z),
-        )
+        return np.array([self.buffer_x, self.buffer_y, self.buffer_z])

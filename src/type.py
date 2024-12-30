@@ -59,19 +59,22 @@ class IMU:
         vec = list(vars(self).values())
         return np.array(vec)
     def get_status(self):
+        print("imu get status call:", self.ax, self.ay, self.az)
         return all(value is not None for value in [self.ax, self.ay, self.az])
     def clear(self):
-        self.ax = None
-        self.ay = None
-        self.az = None       
+        print("imu clear call")
+        self.__init__()
+        #self.ax = None
+        #self.ay = None
+        #self.az = None       
     
 class CurrentState:
     def __init__(self, state=None):
         if state:
-            self.roll = state.get('roll', None)
-            self.pitch = state.get('pitch', None)
-            self.yaw = state.get('yaw', None)
-            self.alt = state.get('alt', None)
+            self.roll = state.get('roll')
+            self.pitch = state.get('pitch')
+            self.yaw = state.get('yaw')
+            self.alt = state.get('alt')
             #self.time = state.get('time', None)
         else:
             self.roll = None
@@ -94,7 +97,8 @@ class CurrentState:
         return all(value is not None for value in vars(self).values())
     
     def clear(self):
-        self._init_()
+        #print("state clear call")
+        self.__init__()
     
     def get_state_vec(self):
         vec = list(vars(self).values())

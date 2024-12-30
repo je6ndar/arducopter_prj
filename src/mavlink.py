@@ -67,7 +67,7 @@ imu = types.IMU()
 #current_attitude = {'time':None,'roll':None,'pitch':None,'yaw':None,'alt':None}  #Set current attitude to None every new cycle of mavlink message acquisition
 
 def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
-    global MAVCONN, LAST_RECV_MSG_TIME,current_attitude#, attitude
+    global MAVCONN, LAST_RECV_MSG_TIME,current_attitude, imu#, attitude
     
     
     while True:
@@ -102,7 +102,9 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
 
             if in_msg.get_type() == 'RAW_IMU':
                 acc = [in_msg.xacc, in_msg.yacc, in_msg.zacc]
+                #print(acc)
                 imu.update(acc)
+                print("got imu:", imu.get_acc_vec())
 
             if in_msg.get_type() == 'ATTITUDE':
                 current_attitude.roll = in_msg.roll                
@@ -117,16 +119,24 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
                 rc_event = helpers.servo_raw_to_rc_level(in_msg)
                 if rc_event in [state.EV_RC_LOW, state.EV_RC_HIGH]:                         #MED?
                     state.next_state(rc_event)
-            
+            #print(current_attitude.get_state_vec())
+            #print(imu.get_acc_vec())
             if not current_attitude.get_status() or not imu.get_status():
-                continue
-            else:
+                print("+++++++++Continue++++++++")
                 print(current_attitude.get_state_vec())
                 print(imu.get_acc_vec())
+                continue
+            else:
+                #print(current_attitude.get_state_vec())
+                #print(imu.get_acc_vec())
                 if state.STATE==state.HOVER:
                     msg_time = time.time()                        
                     vehicle_data = {'attitude':current_attitude,'IMU':imu,'time':msg_time}
                     CurrentAttitudeQueue.put(vehicle_data)
+                    print("Mavlink Current attitude:", CurrentAttitudeQueue.empty())
+                    current_attitude.clear()
+                    imu.clear()
+                else: 
                     current_attitude.clear()
                     imu.clear()
                 try:

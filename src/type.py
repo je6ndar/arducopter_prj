@@ -35,9 +35,9 @@ class RC_CHANNELS:
 
 class IMU:
     def __init__(self):
-        self.ax = 0
-        self.ay = 0
-        self.az = 0
+        self.ax = None
+        self.ay = None
+        self.az = None
         self.ax_LPfiltered = 0
         self.ay_LPfiltered = 0
         self.az_LPfiltered = 0
@@ -58,6 +58,13 @@ class IMU:
     def get_acc_vec(self):
         vec = list(vars(self).values())
         return np.array(vec)
+    def get_status(self):
+        return all(value is not None for value in [self.ax, self.ay, self.az])
+    def clear(self):
+        self.ax = None
+        self.ay = None
+        self.az = None       
+    
 class CurrentState:
     def __init__(self, state=None):
         if state:
@@ -65,23 +72,23 @@ class CurrentState:
             self.pitch = state.get('pitch', None)
             self.yaw = state.get('yaw', None)
             self.alt = state.get('alt', None)
-            self.time = state.get('time', None)
+            #self.time = state.get('time', None)
         else:
             self.roll = None
             self.pitch = None
             self.yaw = None
             self.alt = None
-            self.time = None
-    
-    def update(self, state):
-        if state['roll']:
-            self.roll = state['roll']
-        if state['pitch']:
-            self.pitch = state['pitch']
-        if state['yaw']:
-            self.yaw = state['yaw']
-        if state['alt']:
-            self.alt = state['alt']        
+           #self.time = None
+
+    # def update(self, state):
+    #     if state['roll']:
+    #         self.roll = state['roll']
+    #     if state['pitch']:
+    #         self.pitch = state['pitch']
+    #     if state['yaw']:
+    #         self.yaw = state['yaw']
+    #     if state['alt']:
+    #         self.alt = state['alt']        
     
     def get_status(self):
         return all(value is not None for value in vars(self).values())

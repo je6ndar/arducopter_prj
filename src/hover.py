@@ -41,7 +41,7 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
             current_state = vehicle_data['attitude']
             imu = vehicle_data['IMU']
             if t_last:
-                dt = (current_state.time - t_last)/1000
+                dt = (vehicle_data['time']- t_last)/1000
             # If no data is missing in current_state and there is data missing in desired_state
             if current_state.get_status() and not desired_state.set_status():    
                 desired_state.set_initial_cond(current_state)       # Update desired_state with current_state

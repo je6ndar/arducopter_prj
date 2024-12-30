@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.integrate import trapezoid
+#from scipy.integrate import trapezoid
 
 #returns pid, previous error based on the given params 
 def get_pid(current_error, previous_error, P, I, D, dt):

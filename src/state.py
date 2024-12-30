@@ -23,7 +23,9 @@ EV_FRAME = "EV_FRAME"
 # S0,Event,S
 StateTransitions = [
     [IDLE, EV_RC_HIGH, HOVER],
-    [HOVER, EV_RC_LOW, IDLE]
+    [HOVER, EV_RC_LOW, IDLE],
+    [ANY, EV_RC_HIGH, HOVER],
+    [ANY, EV_RC_LOW, IDLE]
 ]
 
 # StateTransitionsDict = {S0: {event: S, ..}, ..}

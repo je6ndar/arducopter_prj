@@ -55,6 +55,9 @@ class IMU:
         self.az_LPfiltered = alpha*self.az_LPfiltered + (1-alpha)*self.az
     def get_acc_filtered(self):
         return np.array([self.ax_LPfiltered, self.ay_LPfiltered, self.az_LPfiltered])
+    def get_acc_vec(self):
+        vec = list(vars(self).values())
+        return np.array(vec)
 class CurrentState:
     def __init__(self, state=None):
         if state:
@@ -62,20 +65,22 @@ class CurrentState:
             self.pitch = state.get('pitch', None)
             self.yaw = state.get('yaw', None)
             self.alt = state.get('alt', None)
+            self.time = state.get('time', None)
         else:
             self.roll = None
             self.pitch = None
             self.yaw = None
             self.alt = None
+            self.time = None
     
     def update(self, state):
-        if state['roll'] is not None:
+        if state['roll']:
             self.roll = state['roll']
-        if state['pitch'] is not None:
+        if state['pitch']:
             self.pitch = state['pitch']
-        if state['yaw'] is not None:
+        if state['yaw']:
             self.yaw = state['yaw']
-        if state['alt'] is not None:
+        if state['alt']:
             self.alt = state['alt']        
     
     def get_status(self):

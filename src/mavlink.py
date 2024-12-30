@@ -4,10 +4,10 @@ import queue
 from threading import Thread
 import json, os
 
-import config as config
-import state as state
-import helpers as helpers
-import type as types
+import src.config as config
+import src.state as state
+import src.helpers as helpers
+import src.type as types
 
 
 SYSTEM_ID = None
@@ -41,12 +41,9 @@ MODE_MAP = [
 MSG_TYPES = [
     'ATTITUDE',
     'VFR_HUD',
-    'EKF_STATUS_REPORT',
     'RAW_IMU',
     'TIMESYNC',
-    'HEARTBEAT',
-    #'MAVLINK_MSG_ID_RC_CHANNELS_SCALED', 'MAVLINK_MSG_ID_RC_CHANNELS_RAW'
-    'SERVO_OUTPUT_RAW',
+    'SERVO_OUTPUT_RAW'
     #'RC_CHANNELS'
 ]
 
@@ -85,7 +82,7 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
                 MAVCONN = None
                 LAST_RECV_MSG_TIME = None
 
-
+        start = time.time()
         if MAVCONN:
             in_msg = MAVCONN.recv_match(type=MSG_TYPES, blocking=True)
         else:
@@ -93,20 +90,21 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
 
         if in_msg is not None:
             LAST_RECV_MSG_TIME = time.time()
-            current_attitude = {'roll': None, 'pitch': None, 'yaw': None, 'alt': None}  #Set current attitude to None every new cycle of mavlink message acquisition    
+            current_attitude = {'time':None,'roll':None,'pitch':None,'yaw':None,'alt':None}  #Set current attitude to None every new cycle of mavlink message acquisition    
 
             # Get current flight mode 
-            if in_msg.get_type() == 'HEARTBEAT':
-                current_mode = get_flight_mode(in_msg)
-                print("CurrentFlightMode:", current_mode)
-                if current_mode != FLIGHT_MODE:
-                    FLIGHT_MODE = current_mode
+            # if in_msg.get_type() == 'HEARTBEAT':
+            #     current_mode = get_flight_mode(in_msg)
+            #     print("CurrentFlightMode:", current_mode)
+            #     if current_mode != FLIGHT_MODE:
+            #         FLIGHT_MODE = current_mode
 
             if in_msg.get_type() == 'RAW_IMU':
                 acc = [in_msg.xacc, in_msg.yacc, in_msg.zacc]
                 imu.update(acc)
 
             if in_msg.get_type() == 'ATTITUDE':
+                current_attitude['time'] = in_msg.time_boot_ms
                 current_attitude['roll'] = in_msg.roll                
                 current_attitude['pitch'] = in_msg.pitch
                 current_attitude['yaw'] = in_msg.yaw
@@ -119,10 +117,12 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
                 rc_event = helpers.servo_raw_to_rc_level(in_msg)
                 if rc_event in [state.EV_RC_LOW, state.EV_RC_HIGH]:                         #MED?
                     state.next_state(rc_event)
-                if state.STATE==state.HOVER:
-                    attitude.update(current_attitude)                           # updates values of attitude, keeps previous if new is missing
-                    vehicle_data = {'attitude':attitude,'IMU':imu} 
-                    CurrentAttitudeQueue.put(vehicle_data)
+            print(current_attitude)
+            print(imu.get_acc_vec())
+            if state.STATE==state.HOVER:
+                attitude.update(current_attitude)                           # updates values of attitude, keeps previous if new is missing
+                vehicle_data = {'attitude':attitude,'IMU':imu}
+                CurrentAttitudeQueue.put(vehicle_data)
             try:
                 if SaveQueue:
                     SaveQueue.put_nowait(MavlinkMessageItem(in_msg))
@@ -134,21 +134,25 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
 
                 MAVCONN = None
                 LAST_RECV_MSG_TIME = None
-
+        end = time.time()
+        #print("get freq:", 1/(end-start))
 
 def send_mavlink(MavlinkSendQueue=None):
+    global MAVCONN
     if not MavlinkSendQueue:
         return
     while True:
+        start = time.time() 
         try:
-            out_msg = MavlinkSendQueue.get_nowait()
+            out_msg = MavlinkSendQueue.get()
             out_msg_mavlink = convert_msg(out_msg)
             if MAVCONN and out_msg_mavlink:
                 res = MAVCONN.mav.send(out_msg_mavlink)
             MavlinkSendQueue.task_done()
         except queue.Empty as err:
             pass
-
+        end = time.time()
+        #print("send freq:", 1/(end-start))
 def set_mode(master, mode):
     if mode not in master.mode_mapping():
         print(f"Unknown mode: {mode}")
@@ -243,7 +247,7 @@ def init_mavlink():
     if config.SITL == True:
         print("MAVLINK CONNECTING TO SITL ")
         for i in range(5):
-            mavconn = mavutil.mavlink_connection('udp::14551')
+            mavconn = mavutil.mavlink_connection('udp::14550')
             heartbeat_msg = mavconn.wait_heartbeat(timeout=2) 
             if heartbeat_msg is not None:
                 print("FOUND SITL")
@@ -273,9 +277,10 @@ def init_mavlink():
     print("Heartbeat from system (system %u component %u)" % (mavconn.target_system, mavconn.target_component))
     #perform_timesync_from_systime(mavconn)
 
+    switch_all_messages_off(mavconn)
     request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, ATT_FREQ_Hz)
     request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD, ATT_FREQ_Hz)
-    request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_RAW_IMU, ATT_FREQ_Hz)
+    request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU, ATT_FREQ_Hz)
 
     return mavconn
 
@@ -297,4 +302,13 @@ def request_message_interval(conn, message_id: int, frequency_hz: float):
         1e6 / frequency_hz, # The interval between two messages in microseconds. Set to -1 to disable and 0 to request default rate.
         0, 0, 0, 0, # Unused parameters
         0, # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
+    )
+
+def switch_all_messages_off(mavcon):
+    mavcon.mav.request_data_stream_send(
+    mavcon.target_system,
+    mavcon.target_component,
+    mavutil.mavlink.MAV_DATA_STREAM_ALL,  # All streams
+    0,                                    # Rate of 0 disables the stream
+    1                                     # Start/stop flag
     )

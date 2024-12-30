@@ -2,11 +2,11 @@ import numpy as np
 import queue
 #from scipy.integrate import trapezoid
 
-import config as config
-import mavlink as mavlink
-import type as types
-import state as state
-import helpers as helpers
+import src.config as config
+import src.mavlink as mavlink
+import src.type as types
+import src.state as state
+import src.helpers as helpers
 
 '''
 Raw PID -> clamp Raw PID -> map it onto the pwm value 
@@ -18,6 +18,7 @@ Position estimate:
 Euler angles -> rotational matrix -> rot matrix@
 '''
 dt = 0.01          #100Hz loop
+t_last = None
 scale_imu = 0.00981
 #INITIAL_POSITION = np.array([0,0])   #we set this as initial coordinates in NED
 
@@ -29,15 +30,18 @@ rc_channels = types.RC_CHANNELS()
 previous_state_error = np.zeros(4)
 
 def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
-    global desired_state, previous_state_error, rc_channels
+    global desired_state, previous_state_error, rc_channels, dt, t_last
 
     if not CurrentAttitudeQueue:
         return
     while True:
         try:
-            vehicle_data = CurrentAttitudeQueue.get_nowait()
+            print("+++++++++++++++++++HOVER+++++++++++++++++++++++++++++++")
+            vehicle_data = CurrentAttitudeQueue.get()
             current_state = vehicle_data['attitude']
             imu = vehicle_data['IMU']
+            if t_last:
+                dt = (current_state.time - t_last)/1000
             # If no data is missing in current_state and there is data missing in desired_state
             if current_state.get_status() and not desired_state.set_status():    
                 desired_state.set_initial_cond(current_state)       # Update desired_state with current_state
@@ -79,7 +83,7 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
         yaw_rc = get_yaw_rc(yaw_pid)
         roll_rc = get_roll_rc(roll_pid)
         pitch_rc = get_pitch_rc(pitch_pid)
-        
+        print("=========================================================")
         #pack controll channels into dictionary and update 
         controll_channels = controll_channels_pack(roll=roll_rc, pitch=pitch_rc, yaw=yaw_rc, throttle=throttle_rc)
         rc_channels.update_controll_channels(controll_channels)
@@ -135,13 +139,19 @@ def position_contoller(xy):
 
 
 def get_throttle_rc(throttle_pid:float):
-    pass
+    print("Throttle PID:", throttle_pid)
+    return np.clip(throttle_pid, 1000, 2000)
 
 def get_yaw_rc(yaw_pid:float):
-    pass
+    print("Yaw PID:", yaw_pid)
+    return np.clip(yaw_pid, 1000, 2000)
+
 
 def get_pitch_rc(pitch_pid:float):
-    pass
+    print("Pitch PID:", pitch_pid)
+    return np.clip(pitch_pid, 1000, 2000)
+
 
 def get_roll_rc(roll_pid:float):
-    pass
+    print("Roll PID:", roll_pid)
+    return np.clip(roll_pid, 1000, 2000)

@@ -1,9 +1,8 @@
 
-import state as state
-
-import mavlink as mavlink
-import config as config
-import hover as hover
+import src.state as state
+import src.mavlink as mavlink
+import src.config as config
+import src.hover as hover
 
 import queue
 from threading import Thread
@@ -15,13 +14,13 @@ def run():
     CurrentAttitudeQueue = queue.Queue()
 
     # recv/send data via mavlink
-    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
+    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue))
     MavlinkSendThread = Thread(target=mavlink.send_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
     
     # controls threads
     HoverThread = Thread(target=hover.hover, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue))
     
-    threads = [MavlinkReceiveThread, MavlinkSendThread, HoverThread]
+    threads = [MavlinkReceiveThread, HoverThread, MavlinkSendThread]
     
     for th in threads:
          th.start()

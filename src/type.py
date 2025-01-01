@@ -4,30 +4,30 @@ from collections import deque
 
 class RC_CHANNELS:
     def __init__(self):
-        self.rc1 = 0
-        self.rc2 = 0
-        self.rc3 = 0
-        self.rc4 = 0
-        self.rc5 = 0
-        self.rc6 = 0
-        self.rc7 = 0
-        self.rc8 = 0
-        self.rc9 = 0
-        self.rc10 = 0
-        self.rc11 = 0
-        self.rc12 = 0
-        self.rc13 = 0
-        self.rc14 = 0
-        self.rc15 = 0
-        self.rc16 = 0
-        self.rc17 = 0
-        self.rc18 = 0
+        self.rc1 = int(0)
+        self.rc2 = int(0)
+        self.rc3 = int(0)
+        self.rc4 = int(0)
+        self.rc5 = int(0)
+        self.rc6 = int(0)
+        self.rc7 = int(0)
+        self.rc8 = int(0)
+        self.rc9 = int(0)
+        self.rc10 = int(0)
+        self.rc11 = int(0)
+        self.rc12 = int(0)
+        self.rc13 = int(0)
+        self.rc14 = int(0)
+        self.rc15 = int(0)
+        self.rc16 = int(0)
+        self.rc17 = int(0)
+        self.rc18 = int(0)
 
     def update_controll_channels(self, channels):
-        self.rc1 = channels['roll']
-        self.rc3 = channels['pitch']
-        self.rc4 = channels['yaw']
-        self.rc2 = channels['throttle']
+        self.rc1 = int(channels['roll'])
+        self.rc3 = int(channels['pitch'])
+        self.rc4 = int(channels['yaw'])
+        self.rc2 = int(channels['throttle'])
 
     def get_rc_vec(self):
         vec = list(vars(self).values())
@@ -59,10 +59,10 @@ class IMU:
         vec = list(vars(self).values())
         return np.array(vec)
     def get_status(self):
-        print("imu get status call:", self.ax, self.ay, self.az)
+        #print("imu get status call:", self.ax, self.ay, self.az)
         return all(value is not None for value in [self.ax, self.ay, self.az])
     def clear(self):
-        print("imu clear call")
+        #print("imu clear call")
         self.__init__()
         #self.ax = None
         #self.ay = None

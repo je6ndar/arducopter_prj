@@ -8,7 +8,7 @@ def get_pid(current_error, previous_error, P, I, D, dt):
     i_term = I * dErr * dt                      #simple trapezoid rule
     d_term = D * dErr / dt
     pid = p_term + i_term + d_term
-    return pid, current_error                   #current error becomes previous
+    return pid
 
 
 def servo_raw_to_rc_level(servo_raw_msg):

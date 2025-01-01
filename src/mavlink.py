@@ -62,14 +62,15 @@ comm with mavlink
    get_nowait from queue
     if any -> send to conn
 """
-current_attitude = types.CurrentState()
-imu = types.IMU()
+# current_attitude = types.CurrentState()
+# imu = types.IMU()
 #current_attitude = {'time':None,'roll':None,'pitch':None,'yaw':None,'alt':None}  #Set current attitude to None every new cycle of mavlink message acquisition
-
+time_send = 0
 def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
-    global MAVCONN, LAST_RECV_MSG_TIME,current_attitude, imu#, attitude
-    
-    
+    global MAVCONN, LAST_RECV_MSG_TIME, time_send #current_attitude, imu, time_send  ttitude
+    current_attitude = types.CurrentState()
+    imu = types.IMU() 
+
     while True:
         if not MAVCONN:
             try:
@@ -85,13 +86,12 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
 
         #start = time.time()
         if MAVCONN:
-            in_msg = MAVCONN.recv_match(type=MSG_TYPES, blocking=True)
+            in_msg = MAVCONN.recv_match(type=MSG_TYPES, blocking=True)#mavlink goes through messages one by one. 
         else:
             in_msg = None
 
         if in_msg is not None:
-            LAST_RECV_MSG_TIME = time.time()
-                
+            LAST_RECV_MSG_TIME = time.time() 
 
             # Get current flight mode 
             # if in_msg.get_type() == 'HEARTBEAT':
@@ -104,7 +104,7 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
                 acc = [in_msg.xacc, in_msg.yacc, in_msg.zacc]
                 #print(acc)
                 imu.update(acc)
-                print("got imu:", imu.get_acc_vec())
+                #print("got imu:", imu.get_acc_vec())
 
             if in_msg.get_type() == 'ATTITUDE':
                 current_attitude.roll = in_msg.roll                
@@ -122,20 +122,25 @@ def receive_mavlink(CurrentAttitudeQueue=None, SaveQueue=None):
             #print(current_attitude.get_state_vec())
             #print(imu.get_acc_vec())
             if not current_attitude.get_status() or not imu.get_status():
-                print("+++++++++Continue++++++++")
-                print(current_attitude.get_state_vec())
-                print(imu.get_acc_vec())
+                #print("+++++++++Continue++++++++")
+                #print(current_attitude.get_state_vec())
+                #print(imu.get_acc_vec())
                 continue
             else:
+                msg_ready = time.time()
+
+                # print("state is completed")
+                # print("frequency:", 1/(msg_ready - time_send))
+                # time_send = msg_ready
+
                 #print(current_attitude.get_state_vec())
                 #print(imu.get_acc_vec())
                 if state.STATE==state.HOVER:
                     msg_time = time.time()                        
-                    vehicle_data = {'attitude':current_attitude,'IMU':imu,'time':msg_time}
+                    vehicle_data = {'attitude':current_attitude,'IMU':imu,'time':msg_time}   #we put pointers on the object of the class
                     CurrentAttitudeQueue.put(vehicle_data)
-                    print("Mavlink Current attitude:", CurrentAttitudeQueue.empty())
-                    current_attitude.clear()
-                    imu.clear()
+                    current_attitude = types.CurrentState()
+                    imu = types.IMU()
                 else: 
                     current_attitude.clear()
                     imu.clear()
@@ -160,14 +165,16 @@ def send_mavlink(MavlinkSendQueue=None):
     while True:
         start = time.time() 
         try:
-            out_msg = MavlinkSendQueue.get()
+            #print(MavlinkSendQueue.empty())
+            out_msg = MavlinkSendQueue.get_nowait()
             out_msg_mavlink = convert_msg(out_msg)
             if MAVCONN and out_msg_mavlink:
                 res = MAVCONN.mav.send(out_msg_mavlink)
             MavlinkSendQueue.task_done()
+            del out_msg
         except queue.Empty as err:
             pass
-        end = time.time()
+        #end = time.time()
         #print("send freq:", 1/(end-start))
 def set_mode(master, mode):
     if mode not in master.mode_mapping():
@@ -226,7 +233,7 @@ def create_rc_msg(rc):
     
     rc1,rc2,rc3,rc4,rc5,rc6,rc7,rc8,rc9,rc10,rc11,rc12,rc13,rc14,rc15,rc16,rc17,rc18 = rc 
     
-    msg = msg = MAVCONN.mav.rc_channels_override_send(
+    msg = MAVCONN.mav.rc_channels_override_send(
         #target_system = MAVCONN.target_system, 
         #target_component = MAVCONN.target_component,
         target_system = 0,

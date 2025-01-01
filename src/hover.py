@@ -23,27 +23,29 @@ scale_imu = 0.00981
 #INITIAL_POSITION = np.array([0,0])   #we set this as initial coordinates in NED
 
 desired_state = types.DesiredState()  #ALL NONE
-rc_channels = types.RC_CHANNELS()
 #current_state = types.CurrentState() #IF MAVLINK FILE IS LINKED UNCOMMENT THIS AND ADD IT TO GLOBAL VARIABLES. 
+#current_imu = types.IMU()
 #BATCH_SIZE = 4
 #accel_buffer = types.CircularBuffer(BATCH_SIZE)
 previous_state_error = np.zeros(4)
+vehicle_data = None
 
 def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
-    global desired_state, previous_state_error, rc_channels, dt, t_last #current_state
+    global desired_state, previous_state_error, dt, t_last#, current_state, vehicle_data
+    rc_channels = types.RC_CHANNELS()
 
     if not CurrentAttitudeQueue:
         return
     while True:
         try:
-            print("+++++++++++++++++++HOVER+++++++++++++++++++++++++++++++")
+            #print("+++++++++++++++++++HOVER+++++++++++++++++++++++++++++++")
             #print(CurrentAttitudeQueue.empty())
             vehicle_data = CurrentAttitudeQueue.get_nowait()
             current_state = vehicle_data['attitude']
-            imu = vehicle_data['IMU']
-            print(current_state.get_state_vec())
-            print(imu.get_acc_vec())
-            print(vehicle_data['time'])
+            current_imu = vehicle_data['IMU']
+            #print(current_state.get_state_vec())
+            #print(imu.get_acc_vec())
+            #print(vehicle_data['time'])
             if t_last:
                 dt = (vehicle_data['time']- t_last)/1000000
                 t_last = vehicle_data['time']
@@ -65,9 +67,9 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
                 continue
             else:
                 continue
-        imu.scale(scale_imu)
-        imu.run_LPfilter(0.8)  #scale factor
-        Acc = imu.get_acc_filtered()
+        current_imu.scale(scale_imu)
+        current_imu.run_LPfilter(0.8)  #scale factor
+        Acc = current_imu.get_acc_filtered()
         ''' 
         accel_buffer.add(Acc)
         if accel_buffer.is_full():
@@ -84,23 +86,28 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
 
         current_state_error = current_state_vec - desired_state_vec   #roll, pitch, yaw, alt 
 
-        throttle_pid = helpers.get_pid(current_state_error[3], previous_state_error[3], config.throttle_P, config.throttle_I, config.throttle_D, dt)
-        yaw_pid = helpers.get_pid(current_state_error[1], previous_state_error[1], config.yaw_P, config.yaw_I, config.yaw_D, dt)
         roll_pid =helpers.get_pid(current_state_error[0], previous_state_error[0], config.roll_P, config.roll_I, config.roll_D, dt)
+        yaw_pid = helpers.get_pid(current_state_error[1], previous_state_error[1], config.yaw_P, config.yaw_I, config.yaw_D, dt)
         pitch_pid = helpers.get_pid(current_state_error[2], previous_state_error[2], config.pitch_P, config.pitch_I, config.pitch_D, dt)
+        throttle_pid = helpers.get_pid(current_state_error[3], previous_state_error[3], config.throttle_P, config.throttle_I, config.throttle_D, dt)
 
         previous_state_error = current_state_error
 
-        throttle_rc = get_throttle_rc(throttle_pid)
-        yaw_rc = get_yaw_rc(yaw_pid)
         roll_rc = get_roll_rc(roll_pid)
         pitch_rc = get_pitch_rc(pitch_pid)
+        throttle_rc = get_throttle_rc(throttle_pid)
+        yaw_rc = get_yaw_rc(yaw_pid)
         print("=========================================================")
         #pack controll channels into dictionary and update 
         controll_channels = controll_channels_pack(roll=roll_rc, pitch=pitch_rc, yaw=yaw_rc, throttle=throttle_rc)
         rc_channels.update_controll_channels(controll_channels)
 
         MavlinkSendQueue.put(rc_channels)
+        #create new instace for rc_channels
+        rc_channels = types.RC_CHANNELS()  #is deleted in mavlink send thread
+        #delete current state as they are the pointers on the objects we put in the queue in mavlink
+        del current_state
+        del current_imu
 
 
 def controll_channels_pack(roll, pitch, yaw, throttle):

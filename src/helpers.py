@@ -10,6 +10,15 @@ def get_pid(current_error, previous_error, P, I, D, dt):
     pid = p_term + i_term + d_term
     return pid
 
+#k is the theoretical range, e.g. we can get pid values in the range [-k,k]
+def map_pid_to_pwm_dynamic(pid_output, k):
+    pwm_min = 1000
+    pwm_max = 2000
+    # Clamp PID output
+    pid_clamped = max(-k, min(pid_output, k))
+    # Map to PWM range
+    pwm = pwm_min + ((pid_clamped + k) / (2 * k)) * (pwm_max - pwm_min)
+    return pwm
 
 def servo_raw_to_rc_level(servo_raw_msg):
     m = servo_raw_msg

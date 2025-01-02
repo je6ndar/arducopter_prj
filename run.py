@@ -14,13 +14,13 @@ def run():
     CurrentAttitudeQueue = queue.Queue()
 
     # recv/send data via mavlink
-    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue))
-    MavlinkSendThread = Thread(target=mavlink.send_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
+    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue))
+    #MavlinkSendThread = Thread(target=mavlink.send_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
     
     # controls threads
     HoverThread = Thread(target=hover.hover, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue))
     
-    threads = [MavlinkReceiveThread, HoverThread, MavlinkSendThread]
+    threads = [MavlinkReceiveThread, HoverThread]
     
     for th in threads:
          th.start()

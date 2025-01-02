@@ -47,8 +47,8 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
             #print(imu.get_acc_vec())
             #print(vehicle_data['time'])
             if t_last:
-                dt = (vehicle_data['time']- t_last)/1000000
-                t_last = vehicle_data['time']
+                dt = (vehicle_data['time']- t_last)
+            t_last = vehicle_data['time']
             if not desired_state.alt:
                 desired_state.set_initial_condition(current_state)       # Update desired_state with current_state
             # # If no data is missing in current_state and there is data missing in desired_state
@@ -80,6 +80,8 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
         desired_roll, desired_pitch = position_contoller(xy)
         desired_state.update_desired_roll_pitch(desired_roll, desired_pitch)   #we have complete desired state at this point 
         print("Desired State", desired_state.roll, desired_state.pitch, desired_state.yaw, desired_state.alt)
+        print("Current State", current_state.roll, current_state.pitch, current_state.yaw, current_state.alt)
+        print("Frequency:", 1/dt)
         #Now get difference between desired and actual state and run pid loops
         current_state_vec = current_state.get_state_vec()
         desired_state_vec = desired_state.get_state_vec()
@@ -132,6 +134,7 @@ def get_coordinate_estimate(current_state, Acc):
     acc_stored = Acc_NED[:-1]
     vel_stored = vel_NED
     xy_stored = xy_NED
+    print(xy_NED)
     return xy_NED
 
 def zero_all():
@@ -158,19 +161,22 @@ def position_contoller(xy):
 
 
 def get_throttle_rc(throttle_pid:float):
-    print("Throttle PID:", throttle_pid)
-    return np.clip(throttle_pid, 1000, 2000)
+    rc = helpers.map_pid_to_pwm_dynamic(throttle_pid,config.throttle_range)
+    print("Throttle RC:", rc)
+    return rc
 
 def get_yaw_rc(yaw_pid:float):
-    print("Yaw PID:", yaw_pid)
-    return np.clip(yaw_pid, 1000, 2000)
+    rc = helpers.map_pid_to_pwm_dynamic(yaw_pid,config.yaw_range)
+    print("Yaw RC:", rc)
+    return rc
 
 
 def get_pitch_rc(pitch_pid:float):
-    print("Pitch PID:", pitch_pid)
-    return np.clip(pitch_pid, 1000, 2000)
-
+    rc = helpers.map_pid_to_pwm_dynamic(pitch_pid,config.pitch_range)
+    print("Pitch RC:", rc)
+    return rc
 
 def get_roll_rc(roll_pid:float):
-    print("Roll PID:", roll_pid)
-    return np.clip(roll_pid, 1000, 2000)
+    rc = helpers.map_pid_to_pwm_dynamic(roll_pid,config.roll_range)
+    print("Roll RC:", rc)
+    return rc

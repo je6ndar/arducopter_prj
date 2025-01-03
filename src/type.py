@@ -35,16 +35,13 @@ class RC_CHANNELS:
         return np.array(vec) 
     def get_rpyt_vec(self):
         vec = [self.rc1, self.rc2, self.rc4, self.rc3]
-        return vec
+        return np.array(vec)
 
 class IMU:
     def __init__(self):
         self.ax = None
         self.ay = None
         self.az = None
-        self.ax_LPfiltered = 0
-        self.ay_LPfiltered = 0
-        self.az_LPfiltered = 0
     def update(self, acc):
         self.ax = acc[0]
         self.ay = acc[1]
@@ -53,24 +50,13 @@ class IMU:
         self.ax*=scale_factor
         self.ay*=scale_factor
         self.az*=scale_factor
-    def run_LPfilter(self, alpha):
-        self.ax_LPfiltered = alpha*self.ax_LPfiltered + (1-alpha)*self.ax
-        self.ay_LPfiltered = alpha*self.ay_LPfiltered + (1-alpha)*self.ay
-        self.az_LPfiltered = alpha*self.az_LPfiltered + (1-alpha)*self.az
-    def get_acc_filtered(self):
-        return np.array([self.ax_LPfiltered, self.ay_LPfiltered, self.az_LPfiltered])
     def get_acc_vec(self):
         vec = list(vars(self).values())
-        return vec #np.array(vec)
+        return np.array(vec)
     def get_status(self):
-        #print("imu get status call:", self.ax, self.ay, self.az)
-        return all(value is not None for value in [self.ax, self.ay, self.az])
+        return all(value is not None for value in vars(self).values())
     def clear(self):
-        #print("imu clear call")
         self.__init__()
-        #self.ax = None
-        #self.ay = None
-        #self.az = None       
     
 class CurrentState:
     def __init__(self, state=None):

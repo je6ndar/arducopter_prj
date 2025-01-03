@@ -21,45 +21,31 @@ Euler angles -> rotational matrix -> rot matrix@
 dt = 0.01          #100Hz loop
 t_last = None
 scale_imu = 0.00981
-#INITIAL_POSITION = np.array([0,0])   #we set this as initial coordinates in NED
 
 desired_state = types.DesiredState()  #ALL NONE
-#current_state = types.CurrentState() #IF MAVLINK FILE IS LINKED UNCOMMENT THIS AND ADD IT TO GLOBAL VARIABLES. 
-#current_imu = types.IMU()
 #BATCH_SIZE = 4
 #accel_buffer = types.CircularBuffer(BATCH_SIZE)
 previous_state_error = np.zeros(4)
+acc_filtered_previous = np.zeros(3)
+
 vehicle_data = None
 
 def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
-    global desired_state, previous_state_error, dt, t_last#, current_state, vehicle_data
+    global desired_state, previous_state_error, acc_filtered_previous, dt, t_last#, current_state, vehicle_data
     rc_channels = types.RC_CHANNELS()
 
     if not CurrentAttitudeQueue:
         return
     while True:
         try:
-            #print("+++++++++++++++++++HOVER+++++++++++++++++++++++++++++++")
-            #print(CurrentAttitudeQueue.empty())
             vehicle_data = CurrentAttitudeQueue.get_nowait()
             current_state = vehicle_data['attitude']
             current_imu = vehicle_data['IMU']
-            #print(current_state.get_state_vec())
-            #print(imu.get_acc_vec())
-            #print(vehicle_data['time'])
             if t_last:
                 dt = (vehicle_data['time']- t_last)
             t_last = vehicle_data['time']
             if not desired_state.alt:
                 desired_state.set_initial_condition(current_state)       # Update desired_state with current_state
-            # # If no data is missing in current_state and there is data missing in desired_state
-            # if current_state.get_status() and not desired_state.get_status():    
-            #     desired_state.set_initial_condition(current_state)       # Update desired_state with current_state
-            #     print("1111111111111111111111111111111111111111111111111111")
-            # # If data is missing in both states, skip this iteration
-            # elif not current_state.get_status() and not desired_state.get_status():   
-            #     print("222222222222222222222222222222222222222222222222222")
-            #     continue
             CurrentAttitudeQueue.task_done()
         except queue.Empty as error:
             if state.STATE==state.IDLE:
@@ -69,8 +55,10 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
             else:
                 continue
         current_imu.scale(scale_imu)
-        current_imu.run_LPfilter(0.8)  #scale factor
-        Acc = current_imu.get_acc_filtered()
+        Acc = helpers.low_pass_filter(current_imu.get_acc_vec(), acc_filtered_previous, 0.7)
+
+        acc_filtered_previous = Acc
+        
         ''' 
         accel_buffer.add(Acc)
         if accel_buffer.is_full():
@@ -108,7 +96,7 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
         MavlinkSendQueue.put(rc_channels)
         #actual_roll actual_pitch actual_yaw actual_alt desired_roll desired_pitch desired_yaw desired_alt ax ay az filtered_ax filtered_ay filtered_az, roll_rc, pitch_rc, yaw_rc, throttle_rc, time?
         #log_data_vec = [current_state.roll, current_state.pitch, current_state.yaw, current_state.alt, desired_state.roll, desired_pitch.pitch, desired_state.yaw]
-        log_data_vec = list(current_state_vec) + list(desired_state_vec) + current_imu.get_acc_vec() + rc_channels.get_rpyt_vec() + [time.time()]
+        log_data_vec = list(current_state_vec) + list(desired_state_vec) + list(current_imu.get_acc_vec()) + list(Acc) + list(rc_channels.get_rpyt_vec()) + [time.time()]
         print(log_data_vec)
         if SaveQueue:
             SaveQueue.put(log_data_vec)
@@ -146,12 +134,14 @@ def get_coordinate_estimate(current_state, Acc):
     return xy_NED
 
 def zero_all():
-    global acc_stored, vel_stored, xy_stored, pos_controller_error, previous_state_error
+    global acc_stored, vel_stored, xy_stored, pos_controller_error, previous_state_error, acc_filtered_previous
     acc_stored = np.zeros(2)
     vel_stored = np.zeros(2) 
     xy_stored = np.zeros(2)
     pos_controller_error = np.zeros(2)
     previous_state_error = np.zeros(4)
+    acc_filtered_previous = np.zeros(3)
+
 
 
 #TODO - Map pid roll/pitch output onto angle

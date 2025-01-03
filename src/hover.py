@@ -1,5 +1,6 @@
 import numpy as np
 import queue
+import time
 #from scipy.integrate import trapezoid
 
 import src.config as config
@@ -30,7 +31,7 @@ desired_state = types.DesiredState()  #ALL NONE
 previous_state_error = np.zeros(4)
 vehicle_data = None
 
-def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
+def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
     global desired_state, previous_state_error, dt, t_last#, current_state, vehicle_data
     rc_channels = types.RC_CHANNELS()
 
@@ -105,6 +106,13 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None):
         rc_channels.update_controll_channels(controll_channels)
 
         MavlinkSendQueue.put(rc_channels)
+        #actual_roll actual_pitch actual_yaw actual_alt desired_roll desired_pitch desired_yaw desired_alt ax ay az filtered_ax filtered_ay filtered_az, roll_rc, pitch_rc, yaw_rc, throttle_rc, time?
+        #log_data_vec = [current_state.roll, current_state.pitch, current_state.yaw, current_state.alt, desired_state.roll, desired_pitch.pitch, desired_state.yaw]
+        log_data_vec = list(current_state_vec) + list(desired_state_vec) + current_imu.get_acc_vec() + rc_channels.get_rpyt_vec() + [time.time()]
+        print(log_data_vec)
+        if SaveQueue:
+            SaveQueue.put(log_data_vec)
+            
         #create new instace for rc_channels
         rc_channels = types.RC_CHANNELS()  #is deleted in mavlink send thread
         #delete current state as they are the pointers on the objects we put in the queue in mavlink
@@ -146,6 +154,7 @@ def zero_all():
     previous_state_error = np.zeros(4)
 
 
+#TODO - Map pid roll/pitch output onto angle
 pos_controller_error = np.zeros(2) # x, y coordinates errors
 # Returns desired roll and pitch 
 def position_contoller(xy):

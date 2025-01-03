@@ -24,14 +24,18 @@ class RC_CHANNELS:
         self.rc18 = int(0)
 
     def update_controll_channels(self, channels):
+        #sitl mapping
         self.rc1 = int(channels['roll'])
-        self.rc3 = int(channels['pitch'])
+        self.rc2 = int(channels['pitch'])
         self.rc4 = int(channels['yaw'])
-        self.rc2 = int(channels['throttle'])
+        self.rc3 = int(channels['throttle'])
 
     def get_rc_vec(self):
         vec = list(vars(self).values())
         return np.array(vec) 
+    def get_rpyt_vec(self):
+        vec = [self.rc1, self.rc2, self.rc4, self.rc3]
+        return vec
 
 class IMU:
     def __init__(self):
@@ -57,7 +61,7 @@ class IMU:
         return np.array([self.ax_LPfiltered, self.ay_LPfiltered, self.az_LPfiltered])
     def get_acc_vec(self):
         vec = list(vars(self).values())
-        return np.array(vec)
+        return vec #np.array(vec)
     def get_status(self):
         #print("imu get status call:", self.ax, self.ay, self.az)
         return all(value is not None for value in [self.ax, self.ay, self.az])

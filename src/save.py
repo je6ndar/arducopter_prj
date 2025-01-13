@@ -3,6 +3,7 @@ import os, sys, glob, re, csv
 import src.state as state
 
 import src.mavlink as mavlink
+import src.config as config
 
 
 print("FILE save.py = ", __file__)
@@ -57,9 +58,13 @@ def save_data(SaveQueue=None):
     csv_file = open(file_path, mode="w", newline="", buffering=1)  # Use buffering=1 for line buffering
     csv_writer = csv.writer(csv_file)
 
-    # Optionally, write a header row
-    csv_writer.writerow(["actual_roll", "actual_pitch", "actual_yaw", "actual_alt", "desired_roll", "desired_pitch", "desired_yaw", "desired_alt", "ax", "ay", "az",
+    #write a header row
+    if config.HOVER:
+        csv_writer.writerow(["actual_roll", "actual_pitch", "actual_yaw", "actual_alt", "desired_roll", "desired_pitch", "desired_yaw", "desired_alt", "ax", "ay", "az",
                          "filtered_ax", "filtered_ay", "filtered_az", "roll_rc", "pitch_rc", "yaw_rc", "throttle_rc", "time"])
+    elif config.THROTTLE_TUNE:
+        csv_writer.writerow(["current_alt", "desired_alt", "error", "throttle_rc", "throttle_pid", "time"])
+
     i = 0
     while True:
         item = SaveQueue.get()

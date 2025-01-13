@@ -4,6 +4,7 @@ import src.mavlink as mavlink
 import src.config as config
 import src.hover as hover
 import src.save as save
+import src.throttle as throttle
 
 import queue
 from threading import Thread
@@ -22,19 +23,20 @@ def run():
     # controls threads
     HoverThread = Thread(target=hover.hover, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue, SaveQueue=SaveQueue))
     
+    #Throttle Tune 
+    ThrottleThread = Thread(target=throttle.throttle, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue, SaveQueue=SaveQueue))
+
     #Save Thread
     SaveThread = Thread(target=save.save_data, kwargs=dict(SaveQueue=SaveQueue))
 
-    threads = [MavlinkReceiveThread, HoverThread, SaveThread]
+    threads = [MavlinkReceiveThread, SaveThread]
     
+    if config.HOVER == True:
+        threads.append(HoverThread)
+    elif config.THROTTLE_TUNE == True:
+        threads.append(ThrottleThread)
     for th in threads:
          th.start()
-
-    # for debug
-    #state.next_state(state.EV_RC_MED)
-    #time.sleep(5)
-    #state.next_state(state.EV_RC_HIGH)
-
 
 if __name__ == "__main__":
     try:

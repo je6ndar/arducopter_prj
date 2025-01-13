@@ -137,6 +137,8 @@ def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=No
                 #print(current_attitude.get_state_vec())
                 #print(imu.get_acc_vec())
                 if state.STATE==state.HOVER:
+                    if config.THROTTLE_TUNE == True:
+                        set_mode(MAVCONN, 'STABILIZE')
                     msg_time = time.time()                        
                     vehicle_data = {'attitude':current_attitude,'IMU':imu,'time':msg_time}   #we put pointers on the object of the class
                     CurrentAttitudeQueue.put(vehicle_data)
@@ -156,8 +158,6 @@ def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=No
 
                         MAVCONN = None
                         LAST_RECV_MSG_TIME = None
-                #end = time.time()
-                #print("get freq:", 1/(end-start))
 
 def send_mavlink(MavlinkSendQueue=None):
     if not MavlinkSendQueue:

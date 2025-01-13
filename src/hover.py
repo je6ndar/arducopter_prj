@@ -45,6 +45,7 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
                 dt = (vehicle_data['time']- t_last)
             t_last = vehicle_data['time']
             if not desired_state.alt:
+                print("+++++++++++++++++++++++INIT+++++++++++++++++++++++++")
                 desired_state.set_initial_condition(current_state)       # Update desired_state with current_state
             CurrentAttitudeQueue.task_done()
         except queue.Empty as error:
@@ -68,9 +69,9 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
         xy = get_coordinate_estimate(current_state, Acc)
         desired_roll, desired_pitch = position_contoller(xy)
         desired_state.update_desired_roll_pitch(desired_roll, desired_pitch)   #we have complete desired state at this point 
-        print("Desired State", desired_state.roll, desired_state.pitch, desired_state.yaw, desired_state.alt)
-        print("Current State", current_state.roll, current_state.pitch, current_state.yaw, current_state.alt)
-        print("Frequency:", 1/dt)
+        # print("Desired State", desired_state.roll, desired_state.pitch, desired_state.yaw, desired_state.alt)
+        # print("Current State", current_state.roll, current_state.pitch, current_state.yaw, current_state.alt)
+        # print("Frequency:", 1/dt)
         #Now get difference between desired and actual state and run pid loops
         current_state_vec = current_state.get_state_vec()
         desired_state_vec = desired_state.get_state_vec()
@@ -97,7 +98,6 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
         #actual_roll actual_pitch actual_yaw actual_alt desired_roll desired_pitch desired_yaw desired_alt ax ay az filtered_ax filtered_ay filtered_az, roll_rc, pitch_rc, yaw_rc, throttle_rc, time?
         #log_data_vec = [current_state.roll, current_state.pitch, current_state.yaw, current_state.alt, desired_state.roll, desired_pitch.pitch, desired_state.yaw]
         log_data_vec = list(current_state_vec) + list(desired_state_vec) + list(current_imu.get_acc_vec()) + list(Acc) + list(rc_channels.get_rpyt_vec()) + [time.time()]
-        print(log_data_vec)
         if SaveQueue:
             SaveQueue.put(log_data_vec)
             

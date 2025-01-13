@@ -28,7 +28,13 @@ if __name__ == "__main__":
     else:
         data_file = os.path.join(latest, 'log.csv')
         df = pd.read_csv(data_file)
-
+        t0 = df["time"][0]
+        dt = []
+        for t in df["time"]:
+            dt.append(t-t0)
+            t0 = t
+        dt_avg = sum(dt)/(len(dt))
+        print("dt_avg:", dt_avg)
         fig, axes = plt.subplots(2,2, figsize=(10,8))
 
         axes[0, 0].plot(df.index, df['actual_roll'], label='actual_roll', color='b')
@@ -51,6 +57,28 @@ if __name__ == "__main__":
         axes[1, 1].set_title('Altitude')
         axes[1, 1].legend()
 
+        fig1, axes1 = plt.subplots(2,2, figsize=(10,8))
+        axes1[0, 0].plot(df.index, df['ax'], label='ax', color='b')
+        axes1[0, 0].plot(df.index, df['filtered_ax'], label='filtered_ax', color='r')
+        axes1[0, 0].set_title('AccX')
+        axes1[0, 0].legend()
+
+        axes1[0, 1].plot(df.index, df['ax'], label='ax', color='b')
+        axes1[0, 1].plot(df.index, df['filtered_ax'], label='filtered_ax', color='r')
+        axes1[0, 1].set_title('AccY')
+        axes1[0, 1].legend()
+
+        axes1[1, 0].plot(df.index, df['ax'], label='ax', color='b')
+        axes1[1, 0].plot(df.index, df['filtered_ax'], label='filtered_ax', color='r')
+        axes1[1, 0].set_title('AccZ')
+        axes1[1, 0].legend()
+
+        axes1[1, 1].plot(df.index, df['throttle_rc'], label='throttle_rc', color='b')
+        axes1[1, 1].plot(df.index, df['pitch_rc'], label='pitch_rc', color='r')
+        axes1[1, 1].plot(df.index, df['roll_rc'], label='roll_rc', color='g')
+        axes1[1, 1].plot(df.index, df['yaw_rc'], label='yaw_rc', color='y')
+        axes1[1, 1].set_title('Acc')
+        axes1[1, 1].legend()
         plt.tight_layout()
 
         plt.show()

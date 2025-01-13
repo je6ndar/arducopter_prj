@@ -5,7 +5,7 @@ import numpy as np
 def get_pid(current_error, previous_error, P, I, D, dt):
     dErr = current_error - previous_error
     p_term = P * current_error
-    i_term = I * dErr * dt                      #simple trapezoid rule
+    i_term = I * dErr * dt                 #simple trapezoid rule
     d_term = D * dErr / dt
     pid = p_term + i_term + d_term
     return pid

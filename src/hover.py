@@ -76,7 +76,7 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
         current_state_vec = current_state.get_state_vec()
         desired_state_vec = desired_state.get_state_vec()
 
-        current_state_error = current_state_vec - desired_state_vec   #roll, pitch, yaw, alt 
+        current_state_error = desired_state_vec - current_state_vec   #roll, pitch, yaw, alt 
 
         roll_pid =helpers.get_pid(current_state_error[0], previous_state_error[0], config.roll_P, config.roll_I, config.roll_D, dt)
         yaw_pid = helpers.get_pid(current_state_error[1], previous_state_error[1], config.yaw_P, config.yaw_I, config.yaw_D, dt)

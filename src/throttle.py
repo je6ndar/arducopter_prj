@@ -57,7 +57,7 @@ def throttle(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
         current_state_vec = current_state.alt
         desired_state_vec = desired_state.alt
 
-        current_state_error = current_state_vec - desired_state_vec  
+        current_state_error = desired_state_vec - current_state_vec
 
         throttle_pid = helpers.get_pid(current_state_error, previous_state_error, config.throttle_P, config.throttle_I, config.throttle_D, dt)
 

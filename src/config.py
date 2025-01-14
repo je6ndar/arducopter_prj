@@ -33,9 +33,9 @@ yaw_D = 0.0001
 yaw_range = 0.05*(yaw_P + yaw_I*t + yaw_D/t)
 
 #Throttle PID
-throttle_P = 1.8
-throttle_I = 200
-throttle_D = 0.00125
-throttle_range = 1*(throttle_P + throttle_I*t + throttle_D/t)   #assumption that maximum ascend/descend rate is 0.5 m/t, t is defined in the beginning of the file
+throttle_P = 0.9
+throttle_I = 40
+throttle_D = 0.01
+throttle_range = 15 #0.1*(throttle_P + throttle_I*t + throttle_D/t)   #assumption that maximum ascend/descend rate is 0.5 m/t, t is defined in the beginning of the file
 
 #zigver nicolas step response mode acro

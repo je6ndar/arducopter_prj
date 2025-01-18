@@ -8,8 +8,9 @@ import src.config as config
 import src.type as types
 import src.state as state
 import src.helpers as helpers
-
-keys = ["ID","current_alt", "desired_alt", "error", "throttle_rc", "throttle_pid", "time"]
+keys = ["ID","actual_roll", "actual_pitch", "actual_yaw", "actual_alt", "desired_roll", "desired_pitch", "desired_yaw", "desired_alt", "ax", "ay", "az",
+                         "filtered_ax", "filtered_ay", "filtered_az", "roll_rc", "pitch_rc", "yaw_rc", "throttle_rc", "roll_pid", "pitch_pid", "yaw_pid", "throttle_pid", "time"]
+#keys = ["ID","current_alt", "desired_alt", "error", "throttle_rc", "throttle_pid", "time"]
 
 dt = 0.01          #100Hz loop
 t_last = None
@@ -65,8 +66,8 @@ def throttle(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
         rc_channels.update_controll_channels(controll_channels)
 
         MavlinkSendQueue.put(rc_channels)
-       
-        log_data = ["CTRL"] + [current_state_vec] + [desired_state_vec] + [previous_state_error] + [throttle_rc] + [throttle_pid] + [time.time()]
+        
+        log_data = ["CTRL"] + list(current_state.get_state_vec()) + list(desired_state.get_state_vec()) + [None, None, None, None, None, None] + list(rc_channels.get_rpyt_vec()) + [None, None, None, throttle_pid] + [time.time()]
         log = dict(zip(keys, log_data))
         try:
             if SaveQueue:

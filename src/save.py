@@ -56,15 +56,16 @@ def save_data(SaveQueue=None):
     # Open the file once
     file_path = os.path.join(curr_dn, file_name)
 
-    file = open(file_path, 'a')
+    #file = open(file_path, 'a')
 
     i = 0
     while True:
         item = SaveQueue.get()
-        json.dump(item, file, cls=helpers.CustomJSONEncoder)
-        file.write('\n')
-        if i==100:
-            file.flush()
-            i=0
-        i+=1
+        with open(file_path, 'at') as file:
+            json.dump(item, file, cls=helpers.CustomJSONEncoder)
+            file.write('\n')
+        # if i==100:
+        #     file.flush()
+        #     i=0
+        # i+=1
 

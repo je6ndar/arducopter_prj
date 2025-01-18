@@ -1,4 +1,4 @@
-#!/home/je6ndar/Projects/arducopter-prj/arducopter-prj/bin/python3.12
+#!/home/je6ndar/arducopter_prj/arducopter-prj/bin/python3
 
 '''
 extract ISBH and ISBD messages from AP_Logging files and produce FFT plots

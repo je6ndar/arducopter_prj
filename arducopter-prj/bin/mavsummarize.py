@@ -1,4 +1,4 @@
-#!/home/je6ndar/Projects/arducopter-prj/arducopter-prj/bin/python3.12
+#!/home/je6ndar/arducopter_prj/arducopter-prj/bin/python3
 
 '''
 Summarize MAVLink logs. Useful for identifying which log is of interest in a large set.

@@ -1,4 +1,4 @@
-#!/home/je6ndar/Projects/arducopter-prj/arducopter-prj/bin/python3.12
+#!/home/je6ndar/arducopter_prj/arducopter-prj/bin/python3
 
 '''
 example program to extract GPS data from a mavlink log, and create a GPX

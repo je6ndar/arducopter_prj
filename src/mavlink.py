@@ -275,7 +275,7 @@ def init_mavlink():
     if config.SITL == True:
         print("MAVLINK CONNECTING TO SITL ")
         for i in range(5):
-            mavconn = mavutil.mavlink_connection('udp::14550')
+            mavconn = mavutil.mavlink_connection('udp::14551')
             heartbeat_msg = mavconn.wait_heartbeat(timeout=2) 
             if heartbeat_msg is not None:
                 print("FOUND SITL")

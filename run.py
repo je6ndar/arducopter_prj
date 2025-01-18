@@ -17,7 +17,7 @@ def run():
     SaveQueue = queue.Queue()
     
     # recv/send data via mavlink
-    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue))
+    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue, SaveQueue=SaveQueue))
     #MavlinkSendThread = Thread(target=mavlink.send_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
     
     # controls threads
@@ -44,5 +44,5 @@ if __name__ == "__main__":
         run()
     except KeyboardInterrupt:
         print("Interrupted by user")
-        save.csv_file.close()
+        save.file.close()
     #time.sleep(100)

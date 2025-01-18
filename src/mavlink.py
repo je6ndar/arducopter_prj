@@ -43,10 +43,16 @@ MSG_TYPES = [
     'VFR_HUD',
     'RAW_IMU',
     'TIMESYNC',
-    'SERVO_OUTPUT_RAW'
+    'SERVO_OUTPUT_RAW',
+    'GLOBAL_POSITION_INT'
     #'RC_CHANNELS'
 ]
 
+SLOW_MSG_INTERVAL = {
+    'GLOBAL_POSITION_INT': 0.5  # Process GLOBAL_POSITION_INT once every 0.5 seconds
+}
+# Dictionary to track last processed time for each message type
+last_processed_time = {msg: 0 for msg in SLOW_MSG_INTERVAL}
 
 
 # read from MAVCONN -> change STATE, put into SaveQueue
@@ -93,30 +99,32 @@ def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=No
 
         if in_msg is not None:
             LAST_RECV_MSG_TIME = time.time() 
+            
+            msg_type = in_msg.get_type()
+    
+            # Check rate limit for slower messages
+            if msg_type in SLOW_MSG_INTERVAL:
+                if LAST_RECV_MSG_TIME - last_processed_time[msg_type] < SLOW_MSG_INTERVAL[msg_type]:
+                    continue # Skip processing if interval not reached
+                POS = {'ID':"POS", 'lat':in_msg.lat, 'lon': in_msg.lon,'alt': in_msg.alt, 'time': LAST_RECV_MSG_TIME}
+                last_processed_time[msg_type] = LAST_RECV_MSG_TIME
 
-            # Get current flight mode 
-            # if in_msg.get_type() == 'HEARTBEAT':
-            #     current_mode = get_flight_mode(in_msg)
-            #     print("CurrentFlightMode:", current_mode)
-            #     if current_mode != FLIGHT_MODE:
-            #         FLIGHT_MODE = current_mode
-
-            if in_msg.get_type() == 'RAW_IMU':
+            if msg_type == 'RAW_IMU':
                 acc = [in_msg.xacc, in_msg.yacc, in_msg.zacc]
                 #print(acc)
                 imu.update(acc)
                 #print("got imu:", imu.get_acc_vec())
 
-            if in_msg.get_type() == 'ATTITUDE':
+            if msg_type == 'ATTITUDE':
                 current_attitude.roll = in_msg.roll                
                 current_attitude.pitch = in_msg.pitch
                 current_attitude.yaw = in_msg.yaw
             
-            if in_msg.get_type() == 'VFR_HUD':
+            if msg_type == 'VFR_HUD':
                 current_attitude.alt = in_msg.alt
 
             ## State change based on SERVO_OUTPUT_RAW
-            if in_msg.get_type() == 'SERVO_OUTPUT_RAW':
+            if msg_type == 'SERVO_OUTPUT_RAW':
                 rc_event = helpers.servo_raw_to_rc_level(in_msg)
                 if rc_event in [state.EV_RC_LOW, state.EV_RC_HIGH]:                         #MED?
                     state.next_state(rc_event)
@@ -130,34 +138,32 @@ def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=No
             else:
                 msg_ready = time.time()
 
-                # print("state is completed")
-                # print("frequency:", 1/(msg_ready - time_send))
-                # time_send = msg_ready
-
-                #print(current_attitude.get_state_vec())
-                #print(imu.get_acc_vec())
                 if state.STATE==state.HOVER:
-                    if config.THROTTLE_TUNE == True:
+                    if config.HOVER == True:
+                        set_mode(MAVCONN,'ACRO')
+                    elif config.THROTTLE_TUNE == True:
                         set_mode(MAVCONN, 'STABILIZE')
                     msg_time = time.time()                        
                     vehicle_data = {'attitude':current_attitude,'IMU':imu,'time':msg_time}   #we put pointers on the object of the class
                     CurrentAttitudeQueue.put(vehicle_data)
                     current_attitude = types.CurrentState()
                     imu = types.IMU()
+                    try:
+                        if SaveQueue:
+                            if POS:
+                                SaveQueue.put_nowait(POS)
+                                POS = {}
+                    except queue.Full as err:
+                        print("Dropped Position Message", err)
+
                 else: 
                     current_attitude.clear()
                     imu.clear()
-                try:
-                    if SaveQueue:
-                        SaveQueue.put_nowait(MavlinkMessageItem(in_msg))
-                except queue.Full as err:
+        else:
+            if LAST_RECV_MSG_TIME is None or time.time() - LAST_RECV_MSG_TIME > MAX_TIME_WITHOUT_MSG:
 
-                    print("Dropped Mavlink Message", err)
-                else:
-                    if LAST_RECV_MSG_TIME is None or time.time() - LAST_RECV_MSG_TIME > MAX_TIME_WITHOUT_MSG:
-
-                        MAVCONN = None
-                        LAST_RECV_MSG_TIME = None
+                MAVCONN = None
+                LAST_RECV_MSG_TIME = None
 
 def send_mavlink(MavlinkSendQueue=None):
     if not MavlinkSendQueue:
@@ -304,6 +310,7 @@ def init_mavlink():
     request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD, ATT_FREQ_Hz)
     request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU, ATT_FREQ_Hz)
     request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_SERVO_OUTPUT_RAW, ATT_FREQ_Hz)
+    request_message_interval(mavconn, mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 4)
 
     return mavconn
 

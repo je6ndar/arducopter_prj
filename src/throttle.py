@@ -9,15 +9,8 @@ import src.type as types
 import src.state as state
 import src.helpers as helpers
 
-'''
-Raw PID -> clamp Raw PID -> map it onto the pwm value 
-'''
+keys = ["ID","current_alt", "desired_alt", "error", "throttle_rc", "throttle_pid", "time"]
 
-'''
-Position estimate:
-
-Euler angles -> rotational matrix -> rot matrix@
-'''
 dt = 0.01          #100Hz loop
 t_last = None
 
@@ -28,7 +21,7 @@ previous_state_error = 0
 vehicle_data = None
 
 def throttle(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
-    global desired_state, t_last, previous_state_error, dt
+    global desired_state, t_last, previous_state_error, dt, keys
     rc_channels = types.RC_CHANNELS()
 
     if not CurrentAttitudeQueue:
@@ -73,9 +66,13 @@ def throttle(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
 
         MavlinkSendQueue.put(rc_channels)
        
-        log_data_vec = [current_state_vec] + [desired_state_vec] + [previous_state_error] + [throttle_rc] + [throttle_pid] + [time.time()]
-        if SaveQueue:
-            SaveQueue.put(log_data_vec)
+        log_data = ["CTRL"] + [current_state_vec] + [desired_state_vec] + [previous_state_error] + [throttle_rc] + [throttle_pid] + [time.time()]
+        log = dict(zip(keys, log_data))
+        try:
+            if SaveQueue:
+                SaveQueue.put(log)
+        except queue.Full as err:
+                        print("Dropped Controls Message", err)
             
         #create new instace for rc_channels
         rc_channels = types.RC_CHANNELS()  #is deleted in mavlink send thread

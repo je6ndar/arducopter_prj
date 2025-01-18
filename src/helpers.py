@@ -1,4 +1,5 @@
 import numpy as np
+import json
 #from scipy.integrate import trapezoid
 
 #returns pid, previous error based on the given params 
@@ -71,3 +72,10 @@ def euler_to_dcm(euler):
 def low_pass_filter(prev_measurement, current_measurement, alpha):
     estimated_measurement = alpha*prev_measurement + (1-alpha)*current_measurement
     return estimated_measurement
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.int64, np.int32, np.float32, np.float64)):
+            return int(obj)  # or float(obj) if you need floating-point
+        return super().default(obj)

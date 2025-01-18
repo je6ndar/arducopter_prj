@@ -16,8 +16,12 @@ Raw PID -> clamp Raw PID -> map it onto the pwm value
 '''
 Position estimate:
 
-Euler angles -> rotational matrix -> rot matrix@
+Euler angles -> rotational matrix -> rot matrix.T@acc -> double integration 
 '''
+keys = ["ID","actual_roll", "actual_pitch", "actual_yaw", "actual_alt", "desired_roll", "desired_pitch", "desired_yaw", "desired_alt", "ax", "ay", "az",
+                         "filtered_ax", "filtered_ay", "filtered_az", "roll_rc", "pitch_rc", "yaw_rc", "throttle_rc", "roll_pid", "pitch_pid", "yaw_pid", "throttle_pid", "time"]
+
+
 dt = 0.01          #100Hz loop
 t_last = None
 scale_imu = 0.00981
@@ -31,7 +35,7 @@ acc_filtered_previous = np.zeros(3)
 vehicle_data = None
 
 def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
-    global desired_state, previous_state_error, acc_filtered_previous, dt, t_last#, current_state, vehicle_data
+    global desired_state, previous_state_error, acc_filtered_previous, dt, t_last, keys#, current_state, vehicle_data
     rc_channels = types.RC_CHANNELS()
 
     if not CurrentAttitudeQueue:
@@ -85,6 +89,8 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
 
         previous_state_error = current_state_error
 
+        pid_vec = [roll_pid, pitch_pid, yaw_pid, throttle_pid]
+
         roll_rc = get_roll_rc(roll_pid)
         pitch_rc = get_pitch_rc(pitch_pid)
         throttle_rc = get_throttle_rc(throttle_pid)
@@ -97,9 +103,14 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
         MavlinkSendQueue.put(rc_channels)
         #actual_roll actual_pitch actual_yaw actual_alt desired_roll desired_pitch desired_yaw desired_alt ax ay az filtered_ax filtered_ay filtered_az, roll_rc, pitch_rc, yaw_rc, throttle_rc, time?
         #log_data_vec = [current_state.roll, current_state.pitch, current_state.yaw, current_state.alt, desired_state.roll, desired_pitch.pitch, desired_state.yaw]
-        log_data_vec = list(current_state_vec) + list(desired_state_vec) + list(current_imu.get_acc_vec()) + list(Acc) + list(rc_channels.get_rpyt_vec()) + [time.time()]
-        if SaveQueue:
-            SaveQueue.put(log_data_vec)
+        
+        log_data = ["CTRL"] + list(current_state_vec) + list(desired_state_vec) + list(current_imu.get_acc_vec()) + list(Acc) + list(rc_channels.get_rpyt_vec()) + pid_vec + [time.time()]
+        log = dict(zip(keys,log_data))
+        try:
+            if SaveQueue:
+                SaveQueue.put(log)
+        except queue.Full as err:
+                        print("Dropped Controls Message", err)
             
         #create new instace for rc_channels
         rc_channels = types.RC_CHANNELS()  #is deleted in mavlink send thread
@@ -130,7 +141,7 @@ def get_coordinate_estimate(current_state, Acc):
     acc_stored = Acc_NED[:-1]
     vel_stored = vel_NED
     xy_stored = xy_NED
-    print(xy_NED)
+    #print(xy_NED)
     return xy_NED
 
 def zero_all():
@@ -161,21 +172,17 @@ def position_contoller(xy):
 
 def get_throttle_rc(throttle_pid:float):
     rc = helpers.map_pid_to_pwm_dynamic(throttle_pid,config.throttle_range)
-    print("Throttle RC:", rc)
     return rc
 
 def get_yaw_rc(yaw_pid:float):
     rc = helpers.map_pid_to_pwm_dynamic(yaw_pid,config.yaw_range)
-    print("Yaw RC:", rc)
     return rc
 
 
 def get_pitch_rc(pitch_pid:float):
     rc = helpers.map_pid_to_pwm_dynamic(pitch_pid,config.pitch_range)
-    print("Pitch RC:", rc)
     return rc
 
 def get_roll_rc(roll_pid:float):
     rc = helpers.map_pid_to_pwm_dynamic(roll_pid,config.roll_range)
-    print("Roll RC:", rc)
     return rc

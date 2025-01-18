@@ -1,9 +1,11 @@
-import os, sys, glob, re, csv
+import os, sys, glob, re, csv, json
+import shutil
 
 import src.state as state
-
+import src.helpers as helpers
 import src.mavlink as mavlink
 import src.config as config
+
 
 
 print("FILE save.py = ", __file__)
@@ -38,41 +40,31 @@ def make_new_dir():
 
     return final_dir_name
 
-
-csv_file = None
+file = None
 def save_data(SaveQueue=None):
-    global csv_file
+    global file
     print('==== in save_data()')
     if not SaveQueue:
         return
 
  
-    file_name = "log.csv"
+    file_name = "log.json"
     
     curr_dn = make_new_dir()
     print('=================MKDIR')
     
     # Open the file once
     file_path = os.path.join(curr_dn, file_name)
-    
-    csv_file = open(file_path, mode="w", newline="", buffering=1)  # Use buffering=1 for line buffering
-    csv_writer = csv.writer(csv_file)
 
-    #write a header row
-    if config.HOVER:
-        csv_writer.writerow(["actual_roll", "actual_pitch", "actual_yaw", "actual_alt", "desired_roll", "desired_pitch", "desired_yaw", "desired_alt", "ax", "ay", "az",
-                         "filtered_ax", "filtered_ay", "filtered_az", "roll_rc", "pitch_rc", "yaw_rc", "throttle_rc", "time"])
-    elif config.THROTTLE_TUNE:
-        csv_writer.writerow(["current_alt", "desired_alt", "error", "throttle_rc", "throttle_pid", "time"])
+    file = open(file_path, 'a')
 
     i = 0
     while True:
         item = SaveQueue.get()
-        print(item)
-        SaveQueue.task_done()
-        csv_writer.writerow(item)
+        json.dump(item, file, cls=helpers.CustomJSONEncoder)
+        file.write('\n')
         if i==100:
-            csv_file.flush()
+            file.flush()
             i=0
         i+=1
 

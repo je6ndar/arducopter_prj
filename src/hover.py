@@ -60,7 +60,7 @@ def hover(CurrentAttitudeQueue=None, MavlinkSendQueue=None, SaveQueue=None):
             else:
                 continue
         current_imu.scale(scale_imu)
-        Acc = helpers.low_pass_filter(current_imu.get_acc_vec(), acc_filtered_previous, 0.7)
+        Acc = helpers.low_pass_filter(current_imu.get_acc_vec(), acc_filtered_previous, 0.35)
 
         acc_filtered_previous = Acc
         

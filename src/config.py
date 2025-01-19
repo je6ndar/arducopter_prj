@@ -1,7 +1,7 @@
-SITL = True
+SITL = False
 
-HOVER = False
-THROTTLE_TUNE = True
+HOVER = True
+THROTTLE_TUNE = False
 
 t = 0.01
 
@@ -34,8 +34,8 @@ yaw_range = 1#0.05*(yaw_P + yaw_I*t + yaw_D/t)
 
 #Throttle PID
 throttle_P = 0.9
-throttle_I = 40
-throttle_D = 0.011
+throttle_I = 30
+throttle_D = 0.01
 throttle_range = 7 #0.1*(throttle_P + throttle_I*t + throttle_D/t)   #assumption that maximum ascend/descend rate is 0.5 m/t, t is defined in the beginning of the file
 
 #zigver nicolas step response mode acro

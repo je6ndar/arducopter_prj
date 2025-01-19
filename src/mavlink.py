@@ -22,12 +22,12 @@ LAST_RECV_MSG_TIME = None
 MAVLINK_BAUD_RATES = [921600, 115200, 57600]
 MAVLINK_BAUD_RATES_worked = [] # used to save worked baud and quikly restarts if needed
 
-MAVLINK_SERIAL = '/dev/ttyAMA0'
+MAVLINK_SERIAL = '/dev/serial0'
 
 
 MAVLINK_SAVE_FN = 'mavlink.jsons'
 
-ATT_FREQ_Hz = 100
+ATT_FREQ_Hz = 75
 
 MAX_TIME_WITHOUT_MSG = 2.0 # in seconds
 

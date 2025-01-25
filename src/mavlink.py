@@ -22,7 +22,7 @@ LAST_RECV_MSG_TIME = None
 MAVLINK_BAUD_RATES = [921600, 115200, 57600]
 MAVLINK_BAUD_RATES_worked = [] # used to save worked baud and quikly restarts if needed
 
-MAVLINK_SERIAL = '/dev/ttyAMA0'
+MAVLINK_SERIAL = '/dev/serial0'
 
 
 MAVLINK_SAVE_FN = 'mavlink.jsons'
@@ -289,7 +289,7 @@ def init_mavlink():
         #     if heartbeat_msg is not None:
         #         MAVLINK_BAUD_RATES_worked = [baud]
         #         break
-        print("MAVLINK try baud=", baud=115200)
+        print("MAVLINK try baud=", 115200)
         mavconn = mavutil.mavlink_connection(MAVLINK_SERIAL, baud=115200)
         heartbeat_msg = mavconn.wait_heartbeat(timeout=0.5) 
 

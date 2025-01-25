@@ -16,7 +16,6 @@ pyserial==3.5
 python-dateutil==2.9.0.post0
 pytz==2024.2
 PyYAML==6.0.2
-serial==0.0.97
 six==1.17.0
 tenacity==9.0.0
 tzdata==2024.2

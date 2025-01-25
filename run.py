@@ -44,5 +44,7 @@ if __name__ == "__main__":
         run()
     except KeyboardInterrupt:
         print("Interrupted by user")
-        #save.file.close()
+        if mavlink.MAVCONN:
+        	MAVCONN.close()
+#save.file.close()
     #time.sleep(100)

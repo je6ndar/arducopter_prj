@@ -18,7 +18,7 @@ MAVCONN = None
 LAST_RECV_MSG_TIME = None
 
 # when connecting, it will iterate over the following rates
-#MAVLINK_BAUD_RATES = [57600, 115200, 921600]
+#MAVLINK_BAUD_RATES = [115200]
 MAVLINK_BAUD_RATES = [921600, 115200, 57600]
 MAVLINK_BAUD_RATES_worked = [] # used to save worked baud and quikly restarts if needed
 
@@ -282,13 +282,18 @@ def init_mavlink():
                 break
 
     else:
-        for baud in MAVLINK_BAUD_RATES_worked + MAVLINK_BAUD_RATES:
-            print("MAVLINK try baud=", baud)
-            mavconn = mavutil.mavlink_connection(MAVLINK_SERIAL, baud=baud)
-            heartbeat_msg = mavconn.wait_heartbeat(timeout=2) 
-            if heartbeat_msg is not None:
-                MAVLINK_BAUD_RATES_worked = [baud]
-                break
+        #for baud in MAVLINK_BAUD_RATES_worked + MAVLINK_BAUD_RATES:
+        #    print("MAVLINK try baud=", baud)
+        #    mavconn = mavutil.mavlink_connection(MAVLINK_SERIAL, baud=baud)
+        #    heartbeat_msg = mavconn.wait_heartbeat(timeout=2) 
+        #    if heartbeat_msg is not None:
+        #        MAVLINK_BAUD_RATES_worked = [baud]
+        #        break
+	print("MAVLINK try baud=", baud)
+        mavconn = mavutil.mavlink_connection(MAVLINK_SERIAL, baud=115200)
+        heartbeat_msg = mavconn.wait_heartbeat(timeout=0.5) 
+        if heartbeat_msg is not None:
+               break
 
         # not connected
     if not heartbeat_msg:

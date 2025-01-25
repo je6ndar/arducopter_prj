@@ -1,4 +1,5 @@
 SITL = False
+#SITL = True
 
 HOVER = True
 THROTTLE_TUNE = False

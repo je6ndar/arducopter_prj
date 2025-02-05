@@ -1,8 +1,8 @@
 SITL = False
 #SITL = True
 
-HOVER = True
-THROTTLE_TUNE = False
+HOVER =True 
+THROTTLE_TUNE =False 
 
 t = 0.01
 

@@ -17,8 +17,8 @@ def run():
     SaveQueue = queue.Queue()
     
     # recv/send data via mavlink
-    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue, SaveQueue=SaveQueue))
-    #MavlinkSendThread = Thread(target=mavlink.send_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
+    MavlinkReceiveThread = Thread(target=mavlink.receive_mavlink, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, SaveQueue=SaveQueue))
+    MavlinkSendThread = Thread(target=mavlink.send_mavlink, kwargs=dict(MavlinkSendQueue=MavlinkSendQueue))
     
     # controls threads
     HoverThread = Thread(target=hover.hover, kwargs=dict(CurrentAttitudeQueue=CurrentAttitudeQueue, MavlinkSendQueue=MavlinkSendQueue, SaveQueue=SaveQueue))
@@ -45,6 +45,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Interrupted by user")
         if mavlink.MAVCONN:
-        	MAVCONN.close()
+             with mavlink.mavconn_lock:
+                 mavlink.MAVCONN.close()
 #save.file.close()
     #time.sleep(100)

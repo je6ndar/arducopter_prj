@@ -49,6 +49,14 @@ def plot_data():
     df = df.iloc[:-1]
     df_ctrl = df[df["ID"] == "CTRL"]
     df_pos = df[df["ID"] == "POS"]
+    t0 = df_ctrl["time"].iloc[0]
+
+    dt = []
+    for t in df_ctrl["time"]:
+        dt.append(t-t0)
+        t0 = t
+    dt_avg = sum(dt)/(len(dt))
+    print("dt_avg:", dt_avg)
 
     pos = calculate_displacement(df_pos)
     time = np.array(df_pos["time"])

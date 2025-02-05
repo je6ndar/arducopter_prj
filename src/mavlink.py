@@ -8,7 +8,7 @@ import src.config as config
 import src.state as state
 import src.helpers as helpers
 import src.type as types
-
+import threading 
 
 SYSTEM_ID = None
 SYSTEM_COMPONENT = None
@@ -22,12 +22,12 @@ LAST_RECV_MSG_TIME = None
 MAVLINK_BAUD_RATES = [921600, 115200, 57600]
 MAVLINK_BAUD_RATES_worked = [] # used to save worked baud and quikly restarts if needed
 
-MAVLINK_SERIAL = '/dev/serial0'
+MAVLINK_SERIAL = '/dev/ttyAMA0'
 
 
 MAVLINK_SAVE_FN = 'mavlink.jsons'
 
-ATT_FREQ_Hz = 100
+ATT_FREQ_Hz = 50
 
 MAX_TIME_WITHOUT_MSG = 2.0 # in seconds
 
@@ -71,18 +71,23 @@ comm with mavlink
 # current_attitude = types.CurrentState()
 # imu = types.IMU()
 #current_attitude = {'time':None,'roll':None,'pitch':None,'yaw':None,'alt':None}  #Set current attitude to None every new cycle of mavlink message acquisition
+
+mavconn_lock = threading.Lock()
+
 time_send = 0
 def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=None):
     global MAVCONN, LAST_RECV_MSG_TIME, time_send #current_attitude, imu, time_send  ttitude
     current_attitude = types.CurrentState()
     imu = types.IMU() 
+    POS = {}
 
     while True:
         if not MAVCONN:
             try:
-                t_conn1 = time.time()
-                MAVCONN = init_mavlink()
-                t_conn2 = time.time()
+                with mavconn_lock:    
+                    t_conn1 = time.time()
+                    MAVCONN = init_mavlink()
+                    t_conn2 = time.time()
                 print("DT mavlink-conn-init: %.3f" % (t_conn2-t_conn1))
             except RuntimeError as err:
                 print("ERROR while init MAVLINK:", err)
@@ -92,8 +97,10 @@ def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=No
 
         #start = time.time()
         if MAVCONN:
-            in_msg = MAVCONN.recv_match(type=MSG_TYPES, blocking=True)#mavlink goes through messages one by one.
-            send_mavlink(MavlinkSendQueue)
+            with mavconn_lock:
+                in_msg = MAVCONN.recv_match(type=MSG_TYPES, blocking=True)#mavlink goes through messages one by one.
+                # if in_msg is None:
+                #     continue
         else:
             in_msg = None
 
@@ -101,7 +108,7 @@ def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=No
             LAST_RECV_MSG_TIME = time.time() 
             
             msg_type = in_msg.get_type()
-    
+
             # Check rate limit for slower messages
             if msg_type in SLOW_MSG_INTERVAL:
                 if LAST_RECV_MSG_TIME - last_processed_time[msg_type] < SLOW_MSG_INTERVAL[msg_type]:
@@ -161,8 +168,8 @@ def receive_mavlink(CurrentAttitudeQueue=None,MavlinkSendQueue=None,SaveQueue=No
                     imu.clear()
         else:
             if LAST_RECV_MSG_TIME is None or time.time() - LAST_RECV_MSG_TIME > MAX_TIME_WITHOUT_MSG:
-
-                MAVCONN = None
+                with mavconn_lock:
+                    MAVCONN = None
                 LAST_RECV_MSG_TIME = None
 
 def send_mavlink(MavlinkSendQueue=None):
@@ -174,8 +181,10 @@ def send_mavlink(MavlinkSendQueue=None):
         out_msg = MavlinkSendQueue.get_nowait()
         out_msg_mavlink = convert_msg(out_msg)
         #print(out_msg_mavlink)
-        if MAVCONN and out_msg_mavlink:
-            res = MAVCONN.mav.send(out_msg_mavlink)
+        if out_msg_mavlink:
+            if MAVCONN:
+                with mavconn_lock:
+                    res = MAVCONN.mav.send(out_msg_mavlink)
         MavlinkSendQueue.task_done()
         del out_msg
     except queue.Empty as err:
@@ -289,8 +298,8 @@ def init_mavlink():
         #     if heartbeat_msg is not None:
         #         MAVLINK_BAUD_RATES_worked = [baud]
         #         break
-        print("MAVLINK try baud=", 115200)
-        mavconn = mavutil.mavlink_connection(MAVLINK_SERIAL, baud=115200)
+        print("MAVLINK try baud=", 921600)
+        mavconn = mavutil.mavlink_connection(MAVLINK_SERIAL, baud=921600)
         heartbeat_msg = mavconn.wait_heartbeat(timeout=0.5) 
 
         # not connected
@@ -335,7 +344,7 @@ def request_message_interval(conn, message_id: int, frequency_hz: float):
         1e6 / frequency_hz, # The interval between two messages in microseconds. Set to -1 to disable and 0 to request default rate.
         0, 0, 0, 0, # Unused parameters
         0, # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
-    )
+    ) 
 
 def switch_all_messages_off(mavcon):
     mavcon.mav.request_data_stream_send(
